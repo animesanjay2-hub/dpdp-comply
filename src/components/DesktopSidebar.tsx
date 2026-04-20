@@ -7,6 +7,10 @@ import { UserButton } from '@clerk/nextjs'
 export function DesktopSidebar() {
   const pathname = usePathname()
 
+  // Hide on public/onboarding pages
+  const publicPages = ['/', '/login', '/signup', '/sign-in', '/sign-up', '/onboarding']
+  if (publicPages.some(p => pathname.startsWith(p))) return null
+
   const links = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/audit', label: 'Data Audit', icon: Shield },
@@ -14,9 +18,6 @@ export function DesktopSidebar() {
     { href: '/breach', label: 'Breach Response', icon: AlertTriangle },
     { href: '/documents', label: 'Documents', icon: FileText }
   ]
-
-  // Hide on public/onboarding pages
-  if (['/', '/login', '/signup', '/sign-in', '/sign-up', '/onboarding'].some(p => pathname.startsWith(p))) return null
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r min-h-screen p-4 sticky top-0 h-screen overflow-y-auto">
