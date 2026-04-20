@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { BreachTimer } from '@/components/BreachTimer'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import { AlertTriangle, Clock, Activity, FileText, Send, CheckCircle2, Shield } 
 import { useToast } from '@/hooks/use-toast'
 
 export default function BreachPage() {
+  const { userId, isLoaded } = useAuth()
   const [activeBreach, setActiveBreach] = useState<any>(null)
   const [pastBreaches, setPastBreaches] = useState<any[]>([])
   const [isReporting, setIsReporting] = useState(false)
@@ -30,20 +32,18 @@ export default function BreachPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: user } = await supabase.auth.getUser()
-      if (user.user) {
-        setCompanyId(user.user.id)
-        const { data } = await (supabase.from('breach_incidents') as any).select('*').eq('company_id', user.user.id).order('detected_at', { ascending: false })
-        if (data && data.length > 0) {
-          setPastBreaches(data as any[])
-          const active = (data as any[]).find(b => b.status !== 'resolved')
-          if (active) setActiveBreach(active)
-        }
+      if (!isLoaded || !userId) return
+      setCompanyId(userId)
+      const { data } = await (supabase.from('breach_incidents') as any).select('*').eq('company_id', userId).order('detected_at', { ascending: false })
+      if (data && data.length > 0) {
+        setPastBreaches(data as any[])
+        const active = (data as any[]).find(b => b.status !== 'resolved')
+        if (active) setActiveBreach(active)
       }
       setLoading(false)
     }
     init()
-  }, [])
+  }, [isLoaded, userId])
 
   const toggleData = (id: string) => setDataCompromised(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 

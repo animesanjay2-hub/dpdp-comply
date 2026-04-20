@@ -2,8 +2,9 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Cookie, AlertTriangle, Handshake, BarChart, Download, Copy, Save, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -11,6 +12,7 @@ import { jsPDF } from 'jspdf'
 
 function DocumentsContent() {
   const searchParams = useSearchParams()
+  const { userId, isLoaded } = useAuth()
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -21,26 +23,24 @@ function DocumentsContent() {
 
   useEffect(() => {
     async function load() {
-      const { data: user } = await supabase.auth.getUser()
-      if (user.user) {
-        const { data } = await (supabase.from('companies') as any)
-          .select('*')
-          .eq('id', user.user.id)
-          .single()
-        if (data) {
-          setCompanyData(data)
-          
-          // Check for auto-generate param
-          const type = searchParams.get('type')
-          if (type) {
-            // Small delay to ensure state is ready
-            setTimeout(() => generateDoc(type, data), 500)
-          }
+      if (!isLoaded || !userId) return
+      const { data } = await (supabase.from('companies') as any)
+        .select('*')
+        .eq('id', userId)
+        .single()
+      if (data) {
+        setCompanyData(data)
+        
+        // Check for auto-generate param
+        const type = searchParams.get('type')
+        if (type) {
+          setTimeout(() => generateDoc(type, data), 500)
         }
       }
     }
     load()
-  }, [searchParams])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, userId, searchParams])
 
   async function generateDoc(type: string, dataOverride?: any) {
     const currentData = dataOverride || companyData

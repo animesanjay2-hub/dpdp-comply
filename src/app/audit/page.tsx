@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Shield, Plus, Download, ArrowRight } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 
 export default function AuditPage() {
+  const { userId, isLoaded } = useAuth()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
@@ -24,18 +26,16 @@ export default function AuditPage() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: user } = await supabase.auth.getUser()
-      if (user.user) {
-        setCompanyId(user.user.id)
-        const { data } = await (supabase.from('data_inventory_items') as any)
-          .select('*')
-          .eq('company_id', user.user.id)
-        if (data) setItems(data)
-      }
+      if (!isLoaded || !userId) return
+      setCompanyId(userId)
+      const { data } = await (supabase.from('data_inventory_items') as any)
+        .select('*')
+        .eq('company_id', userId)
+      if (data) setItems(data)
       setLoading(false)
     }
     loadData()
-  }, [])
+  }, [isLoaded, userId])
 
   async function handleAdd() {
     const itemToInsert = {
@@ -122,7 +122,7 @@ export default function AuditPage() {
                     <SelectContent>
                       <SelectItem value="regular">Regular</SelectItem>
                       <SelectItem value="sensitive">Sensitive</SelectItem>
-                      <SelectItem value="children">Children's Data</SelectItem>
+                      <SelectItem value="children">Children&apos;s Data</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -155,7 +155,7 @@ export default function AuditPage() {
         </Card>
         <Card className={childrenCount > 0 ? "border-red-200 bg-red-50" : ""}>
           <CardContent className="p-6">
-            <div className="text-sm text-gray-500 flex justify-between">Children's Data <span>{childrenCount > 0 && '🚨'}</span></div>
+            <div className="text-sm text-gray-500 flex justify-between">Children&apos;s Data <span>{childrenCount > 0 && '🚨'}</span></div>
             <div className="text-3xl font-bold text-red-600">{childrenCount}</div>
           </CardContent>
         </Card>
@@ -191,7 +191,7 @@ export default function AuditPage() {
                 </tr>
               ))}
               {items.length === 0 && !loading && (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No data mapped yet. Click "Add Data Item" to start your audit.</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No data mapped yet. Click &quot;Add Data Item&quot; to start your audit.</td></tr>
               )}
               {loading && (
                 <tr><td colSpan={5} className="px-6 py-8 text-center"><div className="animate-pulse text-gray-400">Loading inventory...</div></td></tr>

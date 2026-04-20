@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { ComplianceGauge } from '@/components/ComplianceGauge'
 import { CountdownTimer } from '@/components/CountdownTimer'
@@ -39,6 +40,7 @@ const DEADLINE_2 = new Date('2027-05-13')
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { userId, isLoaded } = useAuth()
   const [loading, setLoading] = useState(!cachedCompany)
   const [company, setCompany] = useState<any>(cachedCompany)
   const [tasks, setTasks] = useState<any[]>(cachedTasks ?? [])
@@ -46,15 +48,13 @@ export default function DashboardPage() {
 
   const loadDashboard = useCallback(async () => {
     if (hasFetched.current) return
+    if (!userId) return
     hasFetched.current = true
-
-    const { data: userData } = await supabase.auth.getUser()
-    if (!userData.user) { router.push('/login'); return }
 
     const { data: comp } = await supabase
       .from('companies')
       .select('*')
-      .eq('id', userData.user.id)
+      .eq('id', userId)
       .single()
 
     if (!comp) { router.push('/onboarding'); return }
@@ -74,9 +74,13 @@ export default function DashboardPage() {
     }
 
     setLoading(false)
-  }, [router])
+  }, [userId, router])
 
-  useEffect(() => { loadDashboard() }, [loadDashboard])
+  useEffect(() => {
+    if (isLoaded && userId) {
+      loadDashboard()
+    }
+  }, [isLoaded, userId, loadDashboard])
 
   async function markTaskDone(taskId: string) {
     const updated = tasks.map(t => t.id === taskId ? { ...t, status: 'completed' } : t)

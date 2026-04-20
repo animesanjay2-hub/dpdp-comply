@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth, useUser } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { seedTasks } from '@/lib/seedTasks'
 import { Button } from '@/components/ui/button'
@@ -62,9 +63,10 @@ const DATA_TYPES = [
 export default function OnboardingPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { userId } = useAuth()
+  const { user } = useUser()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [authChecking, setAuthChecking] = useState(true)
 
   // Form State
   const [company, setCompany] = useState<CompanyForm>({
@@ -76,19 +78,6 @@ export default function OnboardingPage() {
     privacyPolicy: false, consent: false, breachPlan: false,
     grievanceOfficer: false, processorContracts: false, ageVerification: false
   })
-
-  // Auth guard — redirect to login if not authenticated
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-      setAuthChecking(false)
-    }
-    checkAuth()
-  }, [router])
 
   const updateCompany = (key: keyof CompanyForm, value: string | boolean) => setCompany({ ...company, [key]: value })
   const toggleData = (id: string) => {
@@ -107,14 +96,13 @@ export default function OnboardingPage() {
   }
 
   async function handleComplete() {
+    if (!userId) {
+      toast({ title: "Error", description: "Please log in first", variant: "destructive" })
+      return
+    }
+
     setLoading(true)
     try {
-      const { data: userData, error: authError } = await supabase.auth.getUser()
-      if (authError) throw new Error("Please log in first")
-
-      const user = userData.user
-      if (!user) throw new Error("No user found")
-
       // Calculate initial score
       let score = 0
       if (compliance.privacyPolicy) score += 10
@@ -125,16 +113,19 @@ export default function OnboardingPage() {
       if (compliance.ageVerification) score += 5
       if (company.is_indian) score += 5
 
+      // Get user email from Clerk
+      const userEmail = user?.primaryEmailAddress?.emailAddress ?? ''
+
       // 1. Save Company (upsert to handle re-onboarding)
       const { error: compError } = await supabase
         .from('companies')
         .upsert({
-          id: user.id,
+          id: userId,
           name: company.name,
           gstin: company.gstin,
           website: company.website,
           founder_name: company.founder_name,
-          email: user.email ?? '',
+          email: userEmail,
           phone: company.phone,
           employee_count: parseInt(company.employee_count) || null,
           funding_stage: company.funding_stage,
@@ -154,14 +145,14 @@ export default function OnboardingPage() {
         const inventoryItems = dataCollected.map(id => {
           const dt = DATA_TYPES.find(d => d.id === id)
           return {
-            company_id: user.id,
+            company_id: userId,
             data_category: dt?.label ?? '',
             data_type: dt?.type ?? 'regular',
             third_party_shared: false
           }
         })
         // Delete existing inventory items for this company first to avoid duplicates
-        await supabase.from('data_inventory_items').delete().eq('company_id', user.id)
+        await supabase.from('data_inventory_items').delete().eq('company_id', userId)
         await supabase.from('data_inventory_items').insert(inventoryItems)
       }
 
@@ -169,12 +160,12 @@ export default function OnboardingPage() {
       const { data: existingTasks } = await supabase
         .from('compliance_tasks')
         .select('id')
-        .eq('company_id', user.id)
+        .eq('company_id', userId)
         .limit(1)
 
       if (!existingTasks || existingTasks.length === 0) {
         const tasksToInsert = seedTasks.map(t => ({
-          company_id: user.id,
+          company_id: userId,
           ...t
         }))
         await supabase.from('compliance_tasks').insert(tasksToInsert)
@@ -188,14 +179,6 @@ export default function OnboardingPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (authChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500 animate-pulse">Checking authentication...</div>
-      </div>
-    )
   }
 
   const estimatedScore =
