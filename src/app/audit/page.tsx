@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Shield, Plus, Download, ArrowRight } from 'lucide-react'
+import { jsPDF } from 'jspdf'
 
 export default function AuditPage() {
   const [items, setItems] = useState<any[]>([])
@@ -26,7 +27,6 @@ export default function AuditPage() {
       const { data: user } = await supabase.auth.getUser()
       if (user.user) {
         setCompanyId(user.user.id)
-        // Fixed: correct table name is data_inventory_items
         const { data } = await (supabase.from('data_inventory_items') as any)
           .select('*')
           .eq('company_id', user.user.id)
@@ -59,6 +59,36 @@ export default function AuditPage() {
     }
   }
 
+  function exportPDF() {
+    const doc = new jsPDF()
+    doc.setFontSize(18)
+    doc.text('Data Inventory Audit Report', 15, 20)
+    doc.setFontSize(10)
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 28)
+    
+    let y = 40
+    doc.setFontSize(12)
+    doc.text('Inventory Items:', 15, y)
+    y += 10
+    
+    items.forEach((item, index) => {
+      if (y > 270) { doc.addPage(); y = 20 }
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${index + 1}. ${item.data_category} (${item.data_type})`, 15, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Purpose: ${item.collection_purpose || 'N/A'}`, 20, y)
+      y += 5
+      doc.text(`Storage: ${item.storage_location || 'N/A'}`, 20, y)
+      y += 5
+      doc.text(`Retention: ${item.retention_period || 'N/A'}`, 20, y)
+      y += 10
+    })
+    
+    doc.save('data-audit-inventory.pdf')
+  }
+
   const sensitiveCount = items.filter(i => i.data_type === 'sensitive').length
   const childrenCount = items.filter(i => i.data_type === 'children').length
   const sharedCount = items.filter(i => i.third_party_shared).length
@@ -71,7 +101,9 @@ export default function AuditPage() {
           <p className="text-gray-500">Record all personal data collected and processed</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline"><Download size={16} className="mr-2" /> Export PDF</Button>
+          <Button variant="outline" onClick={exportPDF} disabled={items.length === 0}>
+            <Download size={16} className="mr-2" /> Export PDF
+          </Button>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button className="bg-[#1a237e]"><Plus size={16} className="mr-2" /> Add Data Item</Button>

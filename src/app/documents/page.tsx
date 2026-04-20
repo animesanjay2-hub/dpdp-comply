@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,7 +9,8 @@ import { FileText, Cookie, AlertTriangle, Handshake, BarChart, Download, Copy, S
 import { useToast } from '@/hooks/use-toast'
 import { jsPDF } from 'jspdf'
 
-export default function DocumentsPage() {
+function DocumentsContent() {
+  const searchParams = useSearchParams()
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -25,14 +27,24 @@ export default function DocumentsPage() {
           .select('*')
           .eq('id', user.user.id)
           .single()
-        if (data) setCompanyData(data)
+        if (data) {
+          setCompanyData(data)
+          
+          // Check for auto-generate param
+          const type = searchParams.get('type')
+          if (type) {
+            // Small delay to ensure state is ready
+            setTimeout(() => generateDoc(type, data), 500)
+          }
+        }
       }
     }
     load()
-  }, [])
+  }, [searchParams])
 
-  async function generateDoc(type: string) {
-    if (!companyData) {
+  async function generateDoc(type: string, dataOverride?: any) {
+    const currentData = dataOverride || companyData
+    if (!currentData) {
       toast({ title: "Not ready", description: "Company profile not loaded yet.", variant: "destructive" })
       return
     }
@@ -48,20 +60,20 @@ export default function DocumentsPage() {
         body: JSON.stringify({
           type,
           companyData: {
-            ...companyData,
-            grievanceOfficerName: companyData.grievance_officer_name,
-            grievanceOfficerEmail: companyData.grievance_officer_email,
-            fundingStage: companyData.funding_stage,
-            complianceScore: companyData.compliance_score,
+            ...currentData,
+            grievanceOfficerName: currentData.grievance_officer_name,
+            grievanceOfficerEmail: currentData.grievance_officer_email,
+            fundingStage: currentData.funding_stage,
+            complianceScore: currentData.compliance_score,
           }
         })
       })
 
-      const data = await res.json()
-      if (data.success) {
-        setPreviewContent(data.content)
+      const result = await res.json()
+      if (result.success) {
+        setPreviewContent(result.content)
       } else {
-        throw new Error(data.error)
+        throw new Error(result.error)
       }
     } catch (err: any) {
       toast({ title: "Generation failed", description: err.message, variant: "destructive" })
@@ -79,6 +91,10 @@ export default function DocumentsPage() {
     const doc = new jsPDF()
     const textLines = doc.splitTextToSize(previewContent, 180)
     let y = 20
+    doc.setFontSize(16)
+    doc.text(docs.find(d => d.type === activeDocType)?.title || 'Document', 15, y)
+    y += 10
+    doc.setFontSize(10)
     for (let i = 0; i < textLines.length; i++) {
       if (y > 280) { y = 20; doc.addPage() }
       doc.text(textLines[i], 15, y)
@@ -201,5 +217,13 @@ export default function DocumentsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DocumentsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading documents...</div>}>
+      <DocumentsContent />
+    </Suspense>
   )
 }

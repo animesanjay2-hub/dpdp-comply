@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { BreachTimer } from '@/components/BreachTimer'
 import { Button } from '@/components/ui/button'
@@ -134,7 +135,9 @@ export default function BreachPage() {
             </Card>
 
             <div className="grid grid-cols-1 gap-3">
-               <Button className="w-full text-left justify-start" size="lg" variant="outline"><FileText className="mr-2" /> Generate DPB Notification Letter</Button>
+               <Link href="/documents?type=breach_notification">
+                 <Button className="w-full text-left justify-start" size="lg" variant="outline"><FileText className="mr-2" /> Generate DPB Notification Letter</Button>
+               </Link>
                <Button className="w-full text-left justify-start" size="lg" variant="outline"><Send className="mr-2" /> Send User Notifications</Button>
                <Button className="w-full text-left justify-start bg-green-600 hover:bg-green-700 text-white mt-4" size="lg" onClick={resolveBreach}><CheckCircle2 className="mr-2" /> Mark as Resolved</Button>
             </div>
