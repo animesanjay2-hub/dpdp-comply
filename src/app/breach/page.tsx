@@ -34,7 +34,7 @@ export default function BreachPage() {
     async function init() {
       if (!isLoaded || !userId) return
       setCompanyId(userId)
-      const { data } = await (supabase.from('breach_incidents') as any).select('*').eq('company_id', userId).order('detected_at', { ascending: false })
+      const { data } = await (supabase.from('breach_incidents') as any).select('*').eq('company_clerk_user_id', userId).order('detected_at', { ascending: false })
       if (data && data.length > 0) {
         setPastBreaches(data as any[])
         const active = (data as any[]).find(b => b.status !== 'resolved')
@@ -58,7 +58,7 @@ export default function BreachPage() {
     setLoading(true)
     
     const newBreach = {
-      company_id: companyId,
+      company_clerk_user_id: companyId,
       detected_at: new Date(form.detectedAt).toISOString(),
       breach_type: form.breachType,
       affected_users_count: parseInt(form.affectedCount) || 0,

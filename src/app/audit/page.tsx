@@ -30,7 +30,7 @@ export default function AuditPage() {
       setCompanyId(userId)
       const { data } = await (supabase.from('data_inventory_items') as any)
         .select('*')
-        .eq('company_id', userId)
+        .eq('company_clerk_user_id', userId)
       if (data) setItems(data)
       setLoading(false)
     }
@@ -40,7 +40,7 @@ export default function AuditPage() {
   async function handleAdd() {
     const itemToInsert = {
       ...newItem,
-      company_id: companyId,
+      company_clerk_user_id: companyId,
       third_party_names: newItem.third_party_names
         ? newItem.third_party_names.split(',').map(s => s.trim())
         : []

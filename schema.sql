@@ -1,12 +1,23 @@
 -- DPDP Comply Database Schema
 -- Run this in your Supabase SQL Editor
 
--- Enable uuid-ossp extension
+-- Enable uuid-ossp extension (still used for row IDs on child tables)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- ============================================================
+-- MIGRATION: Run this if you already have the old UUID schema
+-- ============================================================
+-- DROP TABLE IF EXISTS generated_documents;
+-- DROP TABLE IF EXISTS data_inventory_items;
+-- DROP TABLE IF EXISTS compliance_tasks;
+-- DROP TABLE IF EXISTS breach_incidents;
+-- DROP TABLE IF EXISTS companies;
+
 -- 1. Create Companies Table
+-- clerk_user_id stores the Clerk userId string (e.g. "user_2abc123...")
 CREATE TABLE companies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  clerk_user_id TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   gstin TEXT,
   website TEXT,
@@ -26,7 +37,7 @@ CREATE TABLE companies (
 -- 2. Create Compliance Tasks Table
 CREATE TABLE compliance_tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
   task_name TEXT NOT NULL,
   category TEXT NOT NULL,
   priority TEXT NOT NULL,
@@ -40,7 +51,7 @@ CREATE TABLE compliance_tasks (
 -- 3. Create Breach Incidents Table
 CREATE TABLE breach_incidents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
   detected_at TIMESTAMP WITH TIME ZONE NOT NULL,
   breach_type TEXT,
   affected_users_count INTEGER,
@@ -56,7 +67,7 @@ CREATE TABLE breach_incidents (
 -- 4. Create Data Inventory Items Table
 CREATE TABLE data_inventory_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
   data_category TEXT NOT NULL,
   data_type TEXT NOT NULL,
   collection_purpose TEXT,
@@ -70,7 +81,7 @@ CREATE TABLE data_inventory_items (
 -- 5. Create Generated Documents Table
 CREATE TABLE generated_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
   doc_type TEXT NOT NULL,
   content TEXT NOT NULL,
   language TEXT NOT NULL,
@@ -78,6 +89,9 @@ CREATE TABLE generated_documents (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Note: For development testing purposes, you can disable RLS (Row Level Security) 
--- on these tables so that your frontend app can read/write without complex auth policies.
--- In a production environment, you should tighten RLS appropriately.
+-- Disable RLS for development (enable and tighten for production)
+ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE compliance_tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE breach_incidents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE data_inventory_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE generated_documents DISABLE ROW LEVEL SECURITY;

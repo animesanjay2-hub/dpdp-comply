@@ -54,7 +54,7 @@ export default function DashboardPage() {
     const { data: comp } = await supabase
       .from('companies')
       .select('*')
-      .eq('id', userId)
+      .eq('clerk_user_id', userId)
       .single()
 
     if (!comp) { router.push('/onboarding'); return }
@@ -65,7 +65,7 @@ export default function DashboardPage() {
     const { data: taskData } = await (supabase
       .from('compliance_tasks') as any)
       .select('id,task_name,category,priority,status,deadline,estimated_time')
-      .eq('company_id', (comp as any).id)
+      .eq('company_clerk_user_id', userId)
       .order('priority', { ascending: true })
 
     if (taskData) {
@@ -98,7 +98,7 @@ export default function DashboardPage() {
       const updatedCompany = { ...company, compliance_score: newScore }
       setCompany(updatedCompany)
       cachedCompany = updatedCompany
-      await (supabase.from('companies') as any).update({ compliance_score: newScore }).eq('id', company.id)
+      await (supabase.from('companies') as any).update({ compliance_score: newScore }).eq('clerk_user_id', userId)
     }
   }
 

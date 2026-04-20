@@ -117,10 +117,11 @@ export default function OnboardingPage() {
       const userEmail = user?.primaryEmailAddress?.emailAddress ?? ''
 
       // 1. Save Company (upsert to handle re-onboarding)
+      // clerk_user_id is TEXT so Clerk's userId string works fine
       const { error: compError } = await supabase
         .from('companies')
         .upsert({
-          id: userId,
+          clerk_user_id: userId,
           name: company.name,
           gstin: company.gstin,
           website: company.website,
@@ -134,47 +135,64 @@ export default function OnboardingPage() {
           grievance_officer_name: company.grievance_officer_name,
           grievance_officer_email: company.grievance_officer_email,
           onboarding_complete: true
-        })
-        .select()
-        .single()
+        }, { onConflict: 'clerk_user_id' })
 
-      if (compError) throw compError
+      if (compError) {
+        console.error('Company upsert error:', compError)
+        throw new Error(compError.message || compError.details || 'Failed to save company data')
+      }
 
       // 2. Save Data Inventory (only selected data types)
       if (dataCollected.length > 0) {
         const inventoryItems = dataCollected.map(id => {
           const dt = DATA_TYPES.find(d => d.id === id)
           return {
-            company_id: userId,
+            company_clerk_user_id: userId,
             data_category: dt?.label ?? '',
             data_type: dt?.type ?? 'regular',
             third_party_shared: false
           }
         })
         // Delete existing inventory items for this company first to avoid duplicates
-        await supabase.from('data_inventory_items').delete().eq('company_id', userId)
-        await supabase.from('data_inventory_items').insert(inventoryItems)
+        const { error: delError } = await supabase.from('data_inventory_items').delete().eq('company_clerk_user_id', userId)
+        if (delError) console.warn('Delete inventory warning:', delError)
+        const { error: invError } = await supabase.from('data_inventory_items').insert(inventoryItems)
+        if (invError) {
+          console.error('Inventory insert error:', invError)
+          throw new Error(invError.message || 'Failed to save data inventory')
+        }
       }
 
       // 3. Save Seed Tasks — only insert if no tasks exist yet (avoid duplicates on re-onboarding)
       const { data: existingTasks } = await supabase
         .from('compliance_tasks')
         .select('id')
-        .eq('company_id', userId)
+        .eq('company_clerk_user_id', userId)
         .limit(1)
 
       if (!existingTasks || existingTasks.length === 0) {
         const tasksToInsert = seedTasks.map(t => ({
-          company_id: userId,
+          company_clerk_user_id: userId,
           ...t
         }))
-        await supabase.from('compliance_tasks').insert(tasksToInsert)
+        const { error: tasksError } = await supabase.from('compliance_tasks').insert(tasksToInsert)
+        if (tasksError) {
+          console.error('Tasks insert error:', tasksError)
+          throw new Error(tasksError.message || 'Failed to save compliance tasks')
+        }
       }
 
       toast({ title: "Setup Complete!", description: "Your compliance dashboard is ready." })
       router.push('/dashboard')
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred"
+      console.error('Onboarding error:', error)
+      let message = 'An unknown error occurred'
+      if (error instanceof Error) {
+        message = error.message
+      } else if (typeof error === 'object' && error !== null) {
+        const pgErr = error as { message?: string; details?: string; hint?: string; code?: string }
+        message = pgErr.message || pgErr.details || pgErr.hint || `DB error code: ${pgErr.code}` || message
+      }
       toast({ title: "Error", description: message, variant: "destructive" })
     } finally {
       setLoading(false)

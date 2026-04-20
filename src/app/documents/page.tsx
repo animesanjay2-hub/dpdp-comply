@@ -26,7 +26,7 @@ function DocumentsContent() {
       if (!isLoaded || !userId) return
       const { data } = await (supabase.from('companies') as any)
         .select('*')
-        .eq('id', userId)
+        .eq('clerk_user_id', userId)
         .single()
       if (data) {
         setCompanyData(data)
@@ -108,7 +108,7 @@ function DocumentsContent() {
     setSaving(true)
     try {
       const { error } = await (supabase.from('generated_documents') as any).insert([{
-        company_id: companyData.id,
+        company_clerk_user_id: userId,
         doc_type: activeDocType,
         content: previewContent,
         language: 'en',
