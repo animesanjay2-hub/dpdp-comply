@@ -16,7 +16,6 @@ import { useAuth } from '@clerk/nextjs'
 export default function DashboardPage() {
   const router = useRouter()
   const { userId } = useAuth()
-
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<any>(null)
   const [tasks, setTasks] = useState<any[]>([])
@@ -90,7 +89,8 @@ export default function DashboardPage() {
     (category: string) => {
       const cat = tasks.filter(t => t.category === category)
       if (!cat.length) return 0
-      return Math.round((cat.filter(t => t.status === 'completed').length / cat.length) * 100)
+      const done = cat.filter(t => t.status === 'completed').length
+      return Math.round((done / cat.length) * 100)
     },
     [tasks]
   )
@@ -121,7 +121,6 @@ export default function DashboardPage() {
           <CountdownTimer targetDate={new Date('2027-05-13')} label="Full Enforcement Deadline" urgencyDays={360} />
         </div>
 
-        {/* Tasks Section */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold">Tasks</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

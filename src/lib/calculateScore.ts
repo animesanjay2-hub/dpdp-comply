@@ -1,53 +1,43 @@
 import { supabase } from './supabase'
 import { ComplianceTask } from '@/types'
 
+const categoryWeights: Record<string, number> = {
+  privacy_notice: 15,
+  consent: 20,
+  data_audit: 15,
+  grievance_officer: 10,
+  breach_protocol: 20,
+  vendor_contracts: 10,
+  children_data: 5,
+  team_training: 5,
+}
+
+const categoryProgress: Record<string, { done: number; total: number }> = {}
+
 export async function calculateAndSaveScore(
   companyId: string
 ): Promise<number> {
-  const { data } = await supabase
-      .from('compliance_tasks')
-      .select('category, status')
-      .eq('company_id', companyId)
-  
+  // ✅ Chain .eq() on the builder before awaiting
+  const { data, error } = await supabase
+    .from('compliance_tasks')
+    .select('category, status')
+    .eq('company_id', companyId)
+
   const tasks = (data as Pick<ComplianceTask, 'category' | 'status'>[]) ?? []
 
   if (tasks.length === 0) return 0
 
-  const categoryWeights: Record<string, number> = {
-    'privacy_notice': 15,
-    'consent': 20,
-    'data_audit': 15,
-    'grievance_officer': 10,
-    'breach_protocol': 20,
-    'vendor_contracts': 10,
-    'children_data': 5,
-    'team_training': 5
-  }
-
-  const categoryProgress: Record<string, {done: number, total: number}> = {}
-
-  for (const task of tasks) {
-    const cat = task.category
-    if (!categoryProgress[cat]) {
-      categoryProgress[cat] = { done: 0, total: 0 }
-    }
-    categoryProgress[cat].total++
-    if (task.status === 'completed') {
-      categoryProgress[cat].done++
-    }
-  }
-
   let score = 0
   for (const [category, weight] of Object.entries(categoryWeights)) {
     const progress = categoryProgress[category]
-    if (progress && progress.total > 0) {
-      const categoryScore = (progress.done / progress.total) * weight
-      score += categoryScore
+    if (progress?.total) {
+      score += (progress.done / progress.total) * weight
     }
   }
 
   const finalScore = Math.round(score)
 
+  // ✅ Chain .eq() on the builder for the update
   await supabase
     .from('companies')
     .update({ compliance_score: finalScore })
@@ -69,11 +59,11 @@ export function scoreToLabel(score: number): string {
 }
 
 export function getCategoryProgress(
-  tasks: { category: string; status: string }[], 
+  tasks: { category: string; status: string }[],
   category: string
 ): number {
   const catTasks = tasks.filter(t => t.category === category)
-  if (catTasks.length === 0) return 0
+  if (!catTasks.length) return 0
   const done = catTasks.filter(t => t.status === 'completed').length
   return Math.round((done / catTasks.length) * 100)
 }

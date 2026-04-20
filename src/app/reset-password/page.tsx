@@ -21,31 +21,26 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/sign-in')
-      }
+      if (!session) router.push('/sign-in')
     }
     checkSession()
   }, [router])
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()
-    
     if (password !== confirmPassword) {
       toast({ title: "Passwords mismatch", description: "Please make sure your passwords match.", variant: "destructive" })
       return
     }
-
     if (password.length < 6) {
       toast({ title: "Weak password", description: "Password must be at least 6 characters long.", variant: "destructive" })
       return
     }
-
     setLoading(true)
 
     const { error } = await supabase.auth.updateUser({
-      password: password
-    })
+      password: password,
+    } as any)
 
     setLoading(false)
     if (error) {
@@ -53,9 +48,7 @@ export default function ResetPasswordPage() {
     } else {
       setSuccess(true)
       toast({ title: "Success", description: "Your password has been updated." })
-      setTimeout(() => {
-        router.push('/login')
-      }, 3000)
+      setTimeout(() => router.push('/login'), 3000)
     }
   }
 
