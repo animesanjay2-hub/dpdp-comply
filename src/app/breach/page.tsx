@@ -48,6 +48,12 @@ export default function BreachPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    
+    if (!form.detectedAt) {
+      toast({ title: "Error", description: "Please select the date and time the breach was detected.", variant: "destructive" })
+      return
+    }
+
     setLoading(true)
     
     const newBreach = {
@@ -84,7 +90,6 @@ export default function BreachPage() {
 
   if (loading) return <div className="p-8">Loading...</div>
 
-  // STATE 2: Active Breach
   if (activeBreach) {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24">
@@ -139,7 +144,6 @@ export default function BreachPage() {
     )
   }
 
-  // STATE 1: No Active Breach
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24">
       <div className="flex items-center justify-between">

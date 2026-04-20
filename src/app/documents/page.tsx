@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Cookie, AlertTriangle, Handshake, BarChart, Download, Copy, Save, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import jsPDF from 'jspdf'
+import { jsPDF } from 'jspdf'
 
 export default function DocumentsPage() {
   const [generating, setGenerating] = useState(false)
@@ -44,7 +45,6 @@ export default function DocumentsPage() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Pass all relevant company data including grievance officer fields
         body: JSON.stringify({
           type,
           companyData: {
@@ -125,7 +125,7 @@ export default function DocumentsPage() {
 
       {!companyData && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
-          ⚠️ Company profile not loaded. Please complete <a href="/onboarding" className="underline font-medium">onboarding</a> first.
+          ⚠️ Company profile not loaded. Please complete <Link href="/onboarding" className="underline font-medium">onboarding</Link> first.
         </div>
       )}
 
