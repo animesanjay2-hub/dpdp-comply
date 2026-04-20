@@ -4,9 +4,9 @@ export async function calculateAndSaveScore(
   companyId: string
 ): Promise<number> {
   const { data: tasks } = await supabase
-    .from('compliance_tasks')
-    .select('category, status')
-    .eq('company_id', companyId)
+      .from('compliance_tasks')
+      .select('category, status')
+      .eq('company_id', companyId) as { data: { category: string; status: string }[] }
 
   if (!tasks || tasks.length === 0) return 0
 
