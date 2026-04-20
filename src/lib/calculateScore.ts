@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { ComplianceTask, Company } from '@/types'
+import { ComplianceTask } from '@/types'
 
 export async function calculateAndSaveScore(
   companyId: string

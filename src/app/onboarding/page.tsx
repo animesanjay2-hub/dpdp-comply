@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
-import { Company, ComplianceTask, DataInventoryItem } from '@/types'
 
 interface CompanyForm {
   name: string
