@@ -3,10 +3,11 @@ import { supabase } from './supabase'
 export async function calculateAndSaveScore(
   companyId: string
 ): Promise<number> {
-  const { data: tasks } = await supabase
+  const { data } = await supabase
       .from('compliance_tasks')
       .select('category, status')
-      .eq('company_id', companyId) as { data: { category: string; status: string }[] }
+      .eq('company_id', companyId)
+  const tasks: { category: string; status: string }[] = data ?? []
 
   if (!tasks || tasks.length === 0) return 0
 
@@ -22,7 +23,7 @@ export async function calculateAndSaveScore(
   }
 
   const categoryProgress: Record<string, {done: number, total: number}> = {}
-  
+
   for (const task of tasks) {
     const cat = task.category
     if (!categoryProgress[cat]) {
@@ -48,7 +49,7 @@ export async function calculateAndSaveScore(
   await (supabase
     .from('companies') as any)
     .update({ compliance_score: finalScore })
-    .eq('id', companyId)
+    .eq('company_id', companyId)
 
   return finalScore
 }
@@ -66,7 +67,7 @@ export function scoreToLabel(score: number): string {
 }
 
 export function getCategoryProgress(
-  tasks: any[], 
+  tasks: { category: string; status: string }[], 
   category: string
 ): number {
   const catTasks = tasks.filter(t => t.category === category)
