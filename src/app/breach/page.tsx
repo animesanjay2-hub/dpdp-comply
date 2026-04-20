@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { AlertTriangle, Clock, Activity, FileText, Send, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog' // Add missing imports
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function BreachPage() {
   const { userId, isLoaded } = useAuth()
@@ -24,20 +24,21 @@ export default function BreachPage() {
   const [loading, setLoading] = useState(true)
   const [companyId, setCompanyId] = useState('')
 
-  // Add dpbNotified to form state
+  // **Added missing dialog open state**
+  const [isOpen, setIsOpen] = useState(false)
+
   const [form, setForm] = useState({
     breachType: '',
     detectedAt: '',
     affectedCount: '',
     description: '',
-    dpbNotified: false, // Add this field
+    dpbNotified: false,
   })
 
   useEffect(() => {
     async function init() {
       if (!isLoaded || !userId) return
 
-      // Fetch company to get its ID (if needed elsewhere)
       const { data: companyData } = await (supabase.from('companies') as any)
         .select('id')
         .eq('clerk_user_id', userId)
@@ -46,7 +47,6 @@ export default function BreachPage() {
         setCompanyId(companyData.id)
       }
 
-      // Load breach incidents for this user
       const { data } = await (supabase.from('breach_incidents') as any)
         .select('*')
         .eq('company_clerk_user_id', userId)
@@ -64,9 +64,8 @@ export default function BreachPage() {
     init()
   }, [isLoaded, userId])
 
-  // Placeholder for reporting logic – can be expanded later
   const handleReport = async () => {
-    // Implementation would go here
+    // Placeholder for reporting logic
   }
 
   if (loading) {
@@ -91,7 +90,6 @@ export default function BreachPage() {
         </div>
       </div>
 
-      {/* Active breach timer */}
       {activeBreach && (
         <Card className="border-amber-200 bg-amber-50">
           <CardHeader>
@@ -113,7 +111,6 @@ export default function BreachPage() {
         </Card>
       )}
 
-      {/* Past breaches list */}
       {pastBreaches.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold">Past Breaches</h2>
@@ -204,7 +201,8 @@ export default function BreachPage() {
               <Label htmlFor="dpbNotified">DPB Notified</Label>
             </div>
 
-            <Button              className="w-full"
+            <Button
+              className="w-full"
               onClick={handleReport}
               disabled={isReporting}
             >
