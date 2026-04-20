@@ -3,8 +3,8 @@ import { supabase } from './supabase'
 export async function calculateAndSaveScore(
   companyId: string
 ): Promise<number> {
-  const { data } = await supabase
-      .from('compliance_tasks')
+  const { data } = await (supabase
+      .from('compliance_tasks') as any)
       .select('category, status')
       .eq('company_id', companyId)
   const tasks: { category: string; status: string }[] = data ?? []
@@ -49,7 +49,7 @@ export async function calculateAndSaveScore(
   await (supabase
     .from('companies') as any)
     .update({ compliance_score: finalScore })
-    .eq('company_id', companyId)
+    .eq('id', companyId)
 
   return finalScore
 }

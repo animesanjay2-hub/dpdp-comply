@@ -12,6 +12,30 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 
+interface CompanyForm {
+  name: string
+  industry: string
+  employee_count: string
+  funding_stage: string
+  website: string
+  gstin: string
+  founder_name: string
+  email: string
+  phone: string
+  grievance_officer_name: string
+  grievance_officer_email: string
+  is_indian: boolean
+}
+
+interface ComplianceState {
+  privacyPolicy: boolean
+  consent: boolean
+  breachPlan: boolean
+  grievanceOfficer: boolean
+  processorContracts: boolean
+  ageVerification: boolean
+}
+
 const DATA_TYPES = [
   { id: 'name', label: 'Full Name', type: 'regular' },
   { id: 'email', label: 'Email Address', type: 'regular' },
@@ -43,12 +67,12 @@ export default function OnboardingPage() {
   const [authChecking, setAuthChecking] = useState(true)
 
   // Form State
-  const [company, setCompany] = useState<any>({
+  const [company, setCompany] = useState<CompanyForm>({
     name: '', industry: '', employee_count: '', funding_stage: '', website: '', gstin: '',
     founder_name: '', email: '', phone: '', grievance_officer_name: '', grievance_officer_email: '', is_indian: true
   })
   const [dataCollected, setDataCollected] = useState<string[]>([])
-  const [compliance, setCompliance] = useState({
+  const [compliance, setCompliance] = useState<ComplianceState>({
     privacyPolicy: false, consent: false, breachPlan: false,
     grievanceOfficer: false, processorContracts: false, ageVerification: false
   })
@@ -66,7 +90,7 @@ export default function OnboardingPage() {
     checkAuth()
   }, [router])
 
-  const updateCompany = (key: string, value: any) => setCompany({ ...company, [key]: value })
+  const updateCompany = (key: keyof CompanyForm, value: string | boolean) => setCompany({ ...company, [key]: value })
   const toggleData = (id: string) => {
     setDataCollected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
@@ -110,7 +134,7 @@ export default function OnboardingPage() {
           gstin: company.gstin,
           website: company.website,
           founder_name: company.founder_name,
-          email: user.email,
+          email: user.email ?? '',
           phone: company.phone,
           employee_count: parseInt(company.employee_count) || null,
           funding_stage: company.funding_stage,
@@ -131,8 +155,8 @@ export default function OnboardingPage() {
           const dt = DATA_TYPES.find(d => d.id === id)
           return {
             company_id: user.id,
-            data_category: dt?.label,
-            data_type: dt?.type,
+            data_category: dt?.label ?? '',
+            data_type: dt?.type ?? 'regular',
             third_party_shared: false
           }
         })
@@ -158,8 +182,9 @@ export default function OnboardingPage() {
 
       toast({ title: "Setup Complete!", description: "Your compliance dashboard is ready." })
       router.push('/dashboard')
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred"
+      toast({ title: "Error", description: message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -299,11 +324,11 @@ export default function OnboardingPage() {
                     <Label className="text-base font-normal">{q.label}</Label>
                     <div className="flex gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={compliance[q.id as keyof typeof compliance]} onChange={() => setCompliance({...compliance, [q.id]: true})} />
+                        <input type="radio" checked={compliance[q.id as keyof ComplianceState]} onChange={() => setCompliance({...compliance, [q.id]: true})} />
                         <span>Yes</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={!compliance[q.id as keyof typeof compliance]} onChange={() => setCompliance({...compliance, [q.id]: false})} />
+                        <input type="radio" checked={!compliance[q.id as keyof ComplianceState]} onChange={() => setCompliance({...compliance, [q.id]: false})} />
                         <span>No</span>
                       </label>
                     </div>
@@ -345,7 +370,7 @@ export default function OnboardingPage() {
             <div className="space-y-8 animate-in fade-in text-center py-8">
               <div className="max-w-md mx-auto">
                 <h3 className="text-3xl font-bold mb-2">All set!</h3>
-                <p className="text-gray-500 mb-8">We've generated your custom compliance roadmap.</p>
+                <p className="text-gray-500 mb-8">We&apos;ve generated your custom compliance roadmap.</p>
                 <div className="p-8 bg-blue-50 text-blue-900 rounded-2xl border border-blue-100 mb-8">
                   <p className="text-sm font-medium uppercase tracking-wider mb-2">Initial Score Est.</p>
                   <p className="text-6xl font-black">{estimatedScore} <span className="text-2xl text-blue-300">/ 100</span></p>

@@ -103,7 +103,7 @@ export default function LandingPage() {
                 { icon: BellRing, title: "Breach Response", desc: "72-hour DPB notification timer & workflow." },
                 { icon: FileText, title: "Privacy Docs", desc: "AI-generated plain-language privacy notices." },
                 { icon: Target, title: "Compliance Score", desc: "Real-time dashboard showing exactly where you stand." },
-                { icon: Users, title: "Children's Data", desc: "Built-in workflows for age verification mapping." }
+                { icon: Users, title: "Children&apos;s Data", desc: "Built-in workflows for age verification mapping." }
               ].map((f, i) => (
                 <Card key={i} className="border-none shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-8">
