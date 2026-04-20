@@ -45,7 +45,7 @@ export function DesktopSidebar() {
       </nav>
       {/* Clerk user profile + sign out button */}
       <div className="border-t pt-4 mt-4 flex items-center gap-3 px-2">
-        <UserButton afterSignOutUrl="/sign-in" />
+        <UserButton />
         <span className="text-sm text-gray-500">Account</span>
       </div>
     </aside>
