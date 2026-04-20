@@ -34,13 +34,14 @@ export function DesktopSidebar() {
               key={link.href} 
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors ${
-                isActive                   ? 'bg-blue-50 text-blue-700' 
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               <Icon size={18} /> {link.label}
             </Link>
-          })
+          )
         })}
       </nav>
       {/* Clerk user profile + sign out button */}
