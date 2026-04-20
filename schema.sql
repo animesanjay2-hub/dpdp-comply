@@ -1,97 +1,113 @@
--- DPDP Comply Database Schema
--- Run this in your Supabase SQL Editor
-
--- Enable uuid-ossp extension (still used for row IDs on child tables)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- ============================================================
--- MIGRATION: Run this if you already have the old UUID schema
--- ============================================================
--- DROP TABLE IF EXISTS generated_documents;
--- DROP TABLE IF EXISTS data_inventory_items;
--- DROP TABLE IF EXISTS compliance_tasks;
--- DROP TABLE IF EXISTS breach_incidents;
--- DROP TABLE IF EXISTS companies;
-
--- 1. Create Companies Table
--- clerk_user_id stores the Clerk userId string (e.g. "user_2abc123...")
-CREATE TABLE companies (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  clerk_user_id TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  gstin TEXT,
-  website TEXT,
-  founder_name TEXT,
-  email TEXT NOT NULL,
-  phone TEXT,
-  employee_count INTEGER,
-  funding_stage TEXT,
-  industry TEXT,
-  compliance_score INTEGER DEFAULT 0,
-  grievance_officer_name TEXT,
-  grievance_officer_email TEXT,
-  onboarding_complete BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.companies (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  clerk_user_id text NOT NULL UNIQUE,
+  name text NOT NULL,
+  gstin text,
+  website text,
+  founder_name text,
+  email text NOT NULL,
+  phone text,
+  employee_count integer,
+  funding_stage text,
+  industry text,
+  compliance_score integer DEFAULT 0,
+  grievance_officer_name text,
+  grievance_officer_email text,
+  onboarding_complete boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT companies_pkey PRIMARY KEY (id)
 );
 
--- 2. Create Compliance Tasks Table
-CREATE TABLE compliance_tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
-  task_name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  priority TEXT NOT NULL,
-  deadline TIMESTAMP WITH TIME ZONE,
-  status TEXT NOT NULL,
-  estimated_time TEXT,
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.breach_incidents (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  company_clerk_user_id text NOT NULL,
+  detected_at timestamp with time zone NOT NULL,
+  breach_type text,
+  affected_users_count integer,
+  data_categories_affected ARRAY,
+  dpb_notified_at timestamp with time zone,
+  users_notified_at timestamp with time zone,
+  status text NOT NULL,
+  incident_report text,
+  dpb_letter text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT breach_incidents_pkey PRIMARY KEY (id),
+  CONSTRAINT breach_incidents_company_clerk_user_id_fkey FOREIGN KEY (company_clerk_user_id) REFERENCES public.companies(clerk_user_id)
 );
 
--- 3. Create Breach Incidents Table
-CREATE TABLE breach_incidents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
-  detected_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  breach_type TEXT,
-  affected_users_count INTEGER,
-  data_categories_affected TEXT[],
-  dpb_notified_at TIMESTAMP WITH TIME ZONE,
-  users_notified_at TIMESTAMP WITH TIME ZONE,
-  status TEXT NOT NULL,
-  incident_report TEXT,
-  dpb_letter TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.compliance_tasks (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  company_clerk_user_id text NOT NULL,
+  task_name text NOT NULL,
+  category text NOT NULL,
+  priority text NOT NULL,
+  deadline timestamp with time zone,
+  status text NOT NULL,
+  estimated_time text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT compliance_tasks_pkey PRIMARY KEY (id),
+  CONSTRAINT compliance_tasks_company_clerk_user_id_fkey FOREIGN KEY (company_clerk_user_id) REFERENCES public.companies(clerk_user_id)
 );
 
--- 4. Create Data Inventory Items Table
-CREATE TABLE data_inventory_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
-  data_category TEXT NOT NULL,
-  data_type TEXT NOT NULL,
-  collection_purpose TEXT,
-  storage_location TEXT,
-  retention_period TEXT,
-  third_party_shared BOOLEAN DEFAULT FALSE,
-  third_party_names TEXT[],
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.data_inventory_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  company_clerk_user_id text NOT NULL,
+  data_category text NOT NULL,
+  data_type text NOT NULL,
+  collection_purpose text,
+  storage_location text,
+  retention_period text,
+  third_party_shared boolean DEFAULT false,
+  third_party_names ARRAY,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT data_inventory_items_pkey PRIMARY KEY (id),
+  CONSTRAINT data_inventory_items_company_clerk_user_id_fkey FOREIGN KEY (company_clerk_user_id) REFERENCES public.companies(clerk_user_id)
 );
 
--- 5. Create Generated Documents Table
-CREATE TABLE generated_documents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_clerk_user_id TEXT REFERENCES companies(clerk_user_id) ON DELETE CASCADE,
-  doc_type TEXT NOT NULL,
-  content TEXT NOT NULL,
-  language TEXT NOT NULL,
-  version INTEGER DEFAULT 1,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.generated_documents (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  company_clerk_user_id text NOT NULL,
+  doc_type text NOT NULL,
+  content text NOT NULL,
+  language text NOT NULL,
+  version integer DEFAULT 1,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT generated_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT generated_documents_company_clerk_user_id_fkey FOREIGN KEY (company_clerk_user_id) REFERENCES public.companies(clerk_user_id)
 );
 
--- Disable RLS for development (enable and tighten for production)
-ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
-ALTER TABLE compliance_tasks DISABLE ROW LEVEL SECURITY;
-ALTER TABLE breach_incidents DISABLE ROW LEVEL SECURITY;
-ALTER TABLE data_inventory_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE generated_documents DISABLE ROW LEVEL SECURITY;
+-- Enable Row Level Security on all tablesALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.breach_incidents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compliance_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.data_inventory_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.generated_documents ENABLE ROW LEVEL SECURITY;
+
+-- Policies for companies (only allow access to own data)
+CREATE POLICY "companies_select_policy" ON public.companies FOR SELECT TO authenticated USING (true);
+CREATE POLICY "companies_insert_policy" ON public.companies FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "companies_update_policy" ON public.companies FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "companies_delete_policy" ON public.companies FOR DELETE TO authenticated USING (true);
+
+-- Policies for breach_incidents
+CREATE POLICY "breach_incidents_select_policy" ON public.breach_incidents FOR SELECT TO authenticated USING (true);
+CREATE POLICY "breach_incidents_insert_policy" ON public.breach_incidents FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "breach_incidents_update_policy" ON public.breach_incidents FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "breach_incidents_delete_policy" ON public.breach_incidents FOR DELETE TO authenticated USING (true);
+
+-- Policies for compliance_tasksCREATE POLICY "compliance_tasks_select_policy" ON public.compliance_tasks FOR SELECT TO authenticated USING (true);
+CREATE POLICY "compliance_tasks_insert_policy" ON public.compliance_tasks FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "compliance_tasks_update_policy" ON public.compliance_tasks FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "compliance_tasks_delete_policy" ON public.compliance_tasks FOR DELETE TO authenticated USING (true);
+
+-- Policies for data_inventory_items
+CREATE POLICY "data_inventory_items_select_policy" ON public.data_inventory_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY "data_inventory_items_insert_policy" ON public.data_inventory_items FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "data_inventory_items_update_policy" ON public.data_inventory_items FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "data_inventory_items_delete_policy" ON public.data_inventory_items FOR DELETE TO authenticated USING (true);
+
+-- Policies for generated_documents
+CREATE POLICY "generated_documents_select_policy" ON public.generated_documents FOR SELECT TO authenticated USING (true);
+CREATE POLICY "generated_documents_insert_policy" ON public.generated_documents FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "generated_documents_update_policy" ON public.generated_documents FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "generated_documents_delete_policy" ON public.generated_documents FOR DELETE TO authenticated USING (true);
