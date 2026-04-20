@@ -43,7 +43,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              {/* Use the new client‑side button */}
+              {/* Use the new client-side button */}
               <SeeDashboardButton />
             </div>
             <p className="text-sm text-blue-200">No credit card. No install. 5 minute setup.</p>

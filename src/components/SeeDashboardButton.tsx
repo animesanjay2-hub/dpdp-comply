@@ -8,7 +8,7 @@ export default function SeeDashboardButton() {
   const router = useRouter()
 
   const goToDashboard = () => {
-    // Client‑side navigation prevents server‑side redirect errors
+    // Client-side navigation to avoid NEXT_REDIRECT errors
     router.push('/dashboard')
   }
 
