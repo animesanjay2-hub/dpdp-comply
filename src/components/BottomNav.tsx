@@ -14,9 +14,9 @@ export function BottomNav() {
     { href: '/documents', label: 'Docs', icon: FileText }
   ]
 
-  // Only show on these pages
-  const showNav = links.some(link => pathname.startsWith(link.href))
-  if (!showNav) return null
+  // Show navigation on home page and all other routes except auth/onboarding
+  const publicPages = ['/login', '/signup', '/sign-in', '/sign-up', '/forgot-password', '/onboarding']
+  if (publicPages.some(p => pathname.startsWith(p))) return null
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

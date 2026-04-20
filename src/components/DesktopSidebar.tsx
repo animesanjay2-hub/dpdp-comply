@@ -7,8 +7,8 @@ import { UserButton } from '@clerk/nextjs'
 export function DesktopSidebar() {
   const pathname = usePathname()
 
-  // Hide on public/onboarding pages
-  const publicPages = ['/', '/login', '/signup', '/sign-in', '/sign-up', '/onboarding']
+  // Hide only on auth and onboarding pages, keep navigation on home and other routes
+  const publicPages = ['/login', '/signup', '/sign-in', '/sign-up', '/forgot-password', '/onboarding']
   if (publicPages.some(p => pathname.startsWith(p))) return null
 
   const links = [
@@ -34,14 +34,13 @@ export function DesktopSidebar() {
               key={link.href} 
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors ${
-                isActive 
-                  ? 'bg-blue-50 text-blue-700' 
+                isActive                   ? 'bg-blue-50 text-blue-700' 
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               <Icon size={18} /> {link.label}
             </Link>
-          )
+          })
         })}
       </nav>
       {/* Clerk user profile + sign out button */}
