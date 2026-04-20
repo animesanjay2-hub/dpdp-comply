@@ -30,11 +30,11 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-8 animate-fade-in">
               <span className="flex h-2 w-2 rounded-full bg-red-400 animate-pulse"></span>
-              India's DPDP Act deadline is May 13, 2027
+              India&apos;s DPDP Act deadline is May 13, 2027
             </div>
             
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-              Is your startup ready? <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400">Most aren't.</span>
+              Is your startup ready? <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400">Most aren&apos;t.</span>
             </h1>
             
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
@@ -71,7 +71,7 @@ export default function LandingPage() {
               {[
                 { amount: "₹250 Crore", reason: "Security breach failures", desc: "Failure to take reasonable security safeguards" },
                 { amount: "₹200 Crore", reason: "Failing to notify DPB", desc: "Not reporting a breach within 72 hours" },
-                { amount: "₹200 Crore", reason: "Children's data violations", desc: "No verifiable parental consent mechanism" },
+                { amount: "₹200 Crore", reason: "Children&apos;s data violations", desc: "No verifiable parental consent mechanism" },
                 { amount: "₹150 Crore", reason: "SDF non-compliance", desc: "Significant Data Fiduciary obligations missed" }
               ].map((penalty, i) => (
                 <Card key={i} className="border-red-100 bg-red-50/30 hover:border-red-200 hover:shadow-lg transition-all pt-6">
