@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
+import { Company, ComplianceTask, DataInventoryItem } from '@/types'
 
 interface CompanyForm {
   name: string
@@ -37,26 +38,26 @@ interface ComplianceState {
 }
 
 const DATA_TYPES = [
-  { id: 'name', label: 'Full Name', type: 'regular' },
-  { id: 'email', label: 'Email Address', type: 'regular' },
-  { id: 'phone', label: 'Phone Number', type: 'regular' },
-  { id: 'address', label: 'Physical Address', type: 'regular' },
-  { id: 'dob', label: 'Date of Birth', type: 'regular' },
-  { id: 'gender', label: 'Gender', type: 'regular' },
-  { id: 'aadhaar', label: 'Aadhaar Number', type: 'sensitive' },
-  { id: 'pan', label: 'PAN Number', type: 'sensitive' },
-  { id: 'bank', label: 'Bank Account Details', type: 'sensitive' },
-  { id: 'credit', label: 'Credit Card Data', type: 'sensitive' },
-  { id: 'location', label: 'Location/GPS Data', type: 'regular' },
-  { id: 'device', label: 'Device Information', type: 'regular' },
-  { id: 'browsing', label: 'Browsing History', type: 'regular' },
-  { id: 'purchase', label: 'Purchase History', type: 'regular' },
-  { id: 'health', label: 'Health/Medical Data', type: 'sensitive' },
-  { id: 'biometric', label: 'Biometric Data', type: 'sensitive' },
-  { id: 'children', label: "Children's Data", type: 'children' },
-  { id: 'religious', label: 'Religious/Political Views', type: 'sensitive' },
-  { id: 'caste', label: 'Caste Information', type: 'sensitive' },
-  { id: 'sexual', label: 'Sexual Orientation', type: 'sensitive' }
+  { id: 'name', label: 'Full Name', type: 'regular' as const },
+  { id: 'email', label: 'Email Address', type: 'regular' as const },
+  { id: 'phone', label: 'Phone Number', type: 'regular' as const },
+  { id: 'address', label: 'Physical Address', type: 'regular' as const },
+  { id: 'dob', label: 'Date of Birth', type: 'regular' as const },
+  { id: 'gender', label: 'Gender', type: 'regular' as const },
+  { id: 'aadhaar', label: 'Aadhaar Number', type: 'sensitive' as const },
+  { id: 'pan', label: 'PAN Number', type: 'sensitive' as const },
+  { id: 'bank', label: 'Bank Account Details', type: 'sensitive' as const },
+  { id: 'credit', label: 'Credit Card Data', type: 'sensitive' as const },
+  { id: 'location', label: 'Location/GPS Data', type: 'regular' as const },
+  { id: 'device', label: 'Device Information', type: 'regular' as const },
+  { id: 'browsing', label: 'Browsing History', type: 'regular' as const },
+  { id: 'purchase', label: 'Purchase History', type: 'regular' as const },
+  { id: 'health', label: 'Health/Medical Data', type: 'sensitive' as const },
+  { id: 'biometric', label: 'Biometric Data', type: 'sensitive' as const },
+  { id: 'children', label: "Children's Data", type: 'children' as const },
+  { id: 'religious', label: 'Religious/Political Views', type: 'sensitive' as const },
+  { id: 'caste', label: 'Caste Information', type: 'sensitive' as const },
+  { id: 'sexual', label: 'Sexual Orientation', type: 'sensitive' as const }
 ]
 
 export default function OnboardingPage() {
@@ -126,8 +127,8 @@ export default function OnboardingPage() {
       if (company.is_indian) score += 5
 
       // 1. Save Company (upsert to handle re-onboarding)
-      const { error: compError } = await (supabase
-        .from('companies') as any)
+      const { error: compError } = await supabase
+        .from('companies')
         .upsert({
           id: user.id,
           name: company.name,
@@ -161,13 +162,13 @@ export default function OnboardingPage() {
           }
         })
         // Delete existing inventory items for this company first to avoid duplicates
-        await (supabase.from('data_inventory_items') as any).delete().eq('company_id', user.id)
-        await (supabase.from('data_inventory_items') as any).insert(inventoryItems)
+        await supabase.from('data_inventory_items').delete().eq('company_id', user.id)
+        await supabase.from('data_inventory_items').insert(inventoryItems)
       }
 
       // 3. Save Seed Tasks — only insert if no tasks exist yet (avoid duplicates on re-onboarding)
-      const { data: existingTasks } = await (supabase
-        .from('compliance_tasks') as any)
+      const { data: existingTasks } = await supabase
+        .from('compliance_tasks')
         .select('id')
         .eq('company_id', user.id)
         .limit(1)
@@ -177,7 +178,7 @@ export default function OnboardingPage() {
           company_id: user.id,
           ...t
         }))
-        await (supabase.from('compliance_tasks') as any).insert(tasksToInsert)
+        await supabase.from('compliance_tasks').insert(tasksToInsert)
       }
 
       toast({ title: "Setup Complete!", description: "Your compliance dashboard is ready." })

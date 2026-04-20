@@ -1,15 +1,17 @@
 import { supabase } from './supabase'
+import { ComplianceTask, Company } from '@/types'
 
 export async function calculateAndSaveScore(
   companyId: string
 ): Promise<number> {
-  const { data } = await (supabase
-      .from('compliance_tasks') as any)
+  const { data } = await supabase
+      .from('compliance_tasks')
       .select('category, status')
       .eq('company_id', companyId)
-  const tasks: { category: string; status: string }[] = data ?? []
+  
+  const tasks = (data as Pick<ComplianceTask, 'category' | 'status'>[]) ?? []
 
-  if (!tasks || tasks.length === 0) return 0
+  if (tasks.length === 0) return 0
 
   const categoryWeights: Record<string, number> = {
     'privacy_notice': 15,
@@ -46,8 +48,8 @@ export async function calculateAndSaveScore(
 
   const finalScore = Math.round(score)
 
-  await (supabase
-    .from('companies') as any)
+  await supabase
+    .from('companies')
     .update({ compliance_score: finalScore })
     .eq('id', companyId)
 
