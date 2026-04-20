@@ -4,7 +4,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-
+import { AuthProvider } from "@/components/AuthProvider";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -22,14 +22,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", inter.variable)}>
       <body className="antialiased bg-gray-50 text-gray-900 min-h-screen pb-16 md:pb-0">
-        <div className="flex min-h-screen">
-          <DesktopSidebar />
-          <main className="flex-1 w-full max-w-full">
-            {children}
-          </main>
-        </div>
-        <BottomNav />
-        <Toaster />
+        <AuthProvider>
+          <div className="flex min-h-screen">
+            <DesktopSidebar />
+            <main className="flex-1 w-full max-w-full">
+              {children}
+            </main>
+          </div>
+          <BottomNav />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
