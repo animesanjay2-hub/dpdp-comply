@@ -14,9 +14,6 @@ import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { AuthGuard } from '@/components/AuthGuard'
 
-// ---------------------------------------------------------------------------
-// Types for the missing pieces (kept minimal for compile‑time safety)
-// ---------------------------------------------------------------------------
 interface ComplianceState {
   privacyPolicy: boolean
   consent: boolean
@@ -25,6 +22,7 @@ interface ComplianceState {
   processorContracts: boolean
   ageVerification: boolean
 }
+
 interface CompanyState {
   name: string
   gstin?: string
@@ -38,13 +36,13 @@ interface CompanyState {
   grievance_officer_name?: string
   grievance_officer_email?: string
 }
+
 interface DataType {
   id: string
   label: string
   type: 'regular' | 'sensitive' | 'children'
 }
 
-// Dummy data for data‑type selection (you can replace with real values later)
 const DATA_TYPES: DataType[] = [
   { id: 'email', label: 'Email', type: 'regular' },
   { id: 'phone', label: 'Phone', type: 'regular' },
@@ -52,8 +50,6 @@ const DATA_TYPES: DataType[] = [
   { id: 'financial', label: 'Financial', type: 'sensitive' },
   { id: 'health', label: 'Health', type: 'sensitive' },
 ]
-
-// ---------------------------------------------------------------------------
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -63,9 +59,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
 
-  // -------------------------------------------------------------------------
-  // NEW STATE variables that were previously missing
-  // -------------------------------------------------------------------------
   const [compliance, setCompliance] = useState<ComplianceState>({
     privacyPolicy: false,
     consent: false,
@@ -89,18 +82,11 @@ export default function OnboardingPage() {
     grievance_officer_email: '',
   })
 
-  const [dataCollected, setDataCollected] = useState<string[]>([]) // array of DATA_TYPES ids
+  const [dataCollected, setDataCollected] = useState<string[]>([])
 
-  // -------------------------------------------------------------------------
-  // Helper to move to the next step (previously missing)
-  // -------------------------------------------------------------------------
   const handleNext = () => {
     if (step < 5) setStep(step + 1)
   }
-
-  // -------------------------------------------------------------------------
-  // Existing logic (unchanged) – only the missing variables are now defined
-  // -------------------------------------------------------------------------
 
   async function handleComplete() {
     if (!userId) {
@@ -111,7 +97,6 @@ export default function OnboardingPage() {
     setLoading(true)
 
     try {
-      // ---- CALCULATE INITIAL SCORE -----------------------------------------
       let score = 0
       if (compliance.privacyPolicy) score += 10
       if (compliance.consent) score += 15
@@ -121,7 +106,6 @@ export default function OnboardingPage() {
       if (compliance.ageVerification) score += 5
       if (company.is_indian) score += 5
 
-      // ---- SAVE COMPANY ----------------------------------------------------
       const userEmail = user?.primaryEmailAddress?.emailAddress ?? ''
       const { error: compError } = await supabase
         .from('companies')
@@ -134,7 +118,7 @@ export default function OnboardingPage() {
             founder_name: company.founder_name,
             email: userEmail,
             phone: company.phone,
-            employee_count: parseInt(company.employee_count ?? '') || null,
+            employee_count: parseInt(company.employee_count) || null,
             funding_stage: company.funding_stage,
             industry: company.industry,
             compliance_score: score,
@@ -147,9 +131,8 @@ export default function OnboardingPage() {
 
       if (compError) throw compError
 
-      // ---- SAVE DATA INVENTORY ---------------------------------------------
       if (dataCollected.length > 0) {
-        const inventoryItems = dataCollected.map((id: string) => {
+        const inventoryItems = dataCollected.map(id => {
           const dt = DATA_TYPES.find(d => d.id === id)
           return {
             company_clerk_user_id: userId,
@@ -159,13 +142,16 @@ export default function OnboardingPage() {
           }
         })
 
-        // Remove any previous items to avoid duplicates
-        await supabase.from('data_inventory_items').delete().eq('company_clerk_user_id', userId)
-        const { error: invError } = await supabase.from('data_inventory_items').insert(inventoryItems)
+        await supabase
+          .from('data_inventory_items')
+          .delete()
+          .eq('company_clerk_user_id', userId)
+        const { error: invError } = await supabase
+          .from('data_inventory_items')
+          .insert(inventoryItems)
         if (invError) throw invError
       }
 
-      // ---- INSERT SEED TASKS (only if none exist) -------------------------
       const { data: existing } = await supabase
         .from('compliance_tasks')
         .select('id')
@@ -177,7 +163,9 @@ export default function OnboardingPage() {
           company_clerk_user_id: userId,
           ...t,
         }))
-        const { error: tasksError } = await supabase.from('compliance_tasks').insert(tasksToInsert)
+        const { error: tasksError } = await supabase
+          .from('compliance_tasks')
+          .insert(tasksToInsert)
         if (tasksError) throw tasksError
       }
 
@@ -191,13 +179,94 @@ export default function OnboardingPage() {
     }
   }
 
-  // -------------------------------------------------------------------------
-
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-3xl shadow-lg border-t-4 border-t-[#00897b]">
-          {/* ... keep the rest of the JSX unchanged ... */}
+          <CardHeader>
+            <CardTitle>Onboarding</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={(step / 5) * 100} className="mb-6" />
+            <div className="space-y-4">
+              {step === 1 && (
+                <div>
+                  <h3 className="font-bold mb-4">Company Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Company Name</Label>
+                      <Input value={company.name} onChange={e => setCompany({...company, name: e.target.value})} />
+                    </div>
+                    <div>
+                      <Label>Industry</Label>
+                      <Select onValueChange={v => setCompany({...company, industry: v})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="technology">Technology</SelectItem>
+                          <SelectItem value="healthcare">Healthcare</SelectItem>
+                          <SelectItem value="finance">Finance</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {step === 2 && (
+                <div>
+                  <h3 className="font-bold mb-4">Compliance Checklist</h3>
+                  <div className="space-y-4">
+                    {Object.entries(compliance).map(([key, value]) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox id={key} checked={value} onCheckedChange={v => setCompliance({...compliance, [key]: v as boolean})} />
+                        <Label htmlFor={key}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {step === 3 && (
+                <div>
+                  <h3 className="font-bold mb-4">Data Collection</h3>
+                  <div className="space-y-4">
+                    {DATA_TYPES.map(dt => (
+                      <div key={dt.id} className="flex items-center space-x-2">
+                        <Checkbox id={dt.id} checked={dataCollected.includes(dt.id)} onCheckedChange={v => {
+                          if (v) setDataCollected([...dataCollected, dt.id])
+                          else setDataCollected(dataCollected.filter(id => id !== dt.id))
+                        }} />
+                        <Label htmlFor={dt.id}>{dt.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {step === 4 && (
+                <div>
+                  <h3 className="font-bold mb-4">Grievance Officer</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Officer Name</Label>
+                      <Input value={company.grievance_officer_name} onChange={e => setCompany({...company, grievance_officer_name: e.target.value})} />
+                    </div>
+                    <div>
+                      <Label>Officer Email</Label>
+                      <Input value={company.grievance_officer_email} onChange={e => setCompany({...company, grievance_officer_email: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {step === 5 && (
+                <div>
+                  <h3 className="font-bold mb-4">Review & Complete</h3>
+                  <div className="space-y-4">
+                    <p>Company: {company.name}</p>
+                    <p>Industry: {company.industry}</p>
+                    <p>Compliance Score: {Object.values(compliance).filter(v => v).length * 10}/100</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
           <CardFooter className="bg-gray-50 px-6 py-4 border-t flex justify-between rounded-b-xl">
             {step > 1 ? (
               <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={loading}>

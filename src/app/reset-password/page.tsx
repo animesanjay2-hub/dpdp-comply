@@ -19,17 +19,14 @@ export default function ResetPasswordPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if we have a session (Supabase automatically handles the recovery token)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        // If no session, they might have reached this page directly without a link
-        // We can't reset password without a session from the recovery link
-        // But Supabase usually handles this. If they are here, they should have a session.
+        router.push('/sign-in')
       }
     }
     checkSession()
-  }, [])
+  }, [router])
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()

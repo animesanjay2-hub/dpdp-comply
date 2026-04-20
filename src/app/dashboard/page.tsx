@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Cookie, AlertTriangle, Download, ArrowRight, CheckCircle2 } from 'lucide-react'
-import { useAuth } from '@clerk/nextjs' // ← added import
+import { useAuth } from '@clerk/nextjs'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { userId } = useAuth() // raw userId for Supabase queries
+  const { userId } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<any>(null)
@@ -27,7 +27,6 @@ export default function DashboardPage() {
     if (!userId) return
     hasFetched.current = true
 
-    // ---- SAFELY FETCH COMPANY -------------------------------------------------
     const { data: comp, error: compError } = await supabase
       .from('companies')
       .select('*')
@@ -42,7 +41,6 @@ export default function DashboardPage() {
 
     setCompany(comp)
 
-    // ---- SAFELY FETCH TASKS ---------------------------------------------------
     const { data: taskData, error: taskError } = await supabase
       .from('compliance_tasks')
       .select('id,task_name,category,priority,status,deadline,estimated_time')
@@ -62,13 +60,15 @@ export default function DashboardPage() {
     if (userId) loadDashboard()
   }, [userId, loadDashboard])
 
-  // ---------------------------------------------------------------------------
-
   async function markTaskDone(taskId: string) {
     const updated = tasks.map(t => (t.id === taskId ? { ...t, status: 'completed' } : t))
     setTasks(updated)
 
-    const { error } = await supabase.from('compliance_tasks').update({ status: 'completed' }).eq('id', taskId)
+    const { error } = await supabase
+      .from('compliance_tasks')
+      .update({ status: 'completed' })
+      .eq('id', taskId)
+
     if (error) console.error('Error updating task status:', error)
 
     if (company) {
@@ -86,8 +86,6 @@ export default function DashboardPage() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-
   const getCategoryProgress = useCallback(
     (category: string) => {
       const cat = tasks.filter(t => t.category === category)
@@ -100,18 +98,14 @@ export default function DashboardPage() {
   const criticalTasks = tasks.filter(t => t.priority === 'critical' && t.status !== 'completed')
   const highTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'completed')
 
-  // ---------------------------------------------------------------------------
-
   return (
     <AuthGuard>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24 w-full">
-        {/* Header */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Company Dashboard</h1>
           {company && <p className="text-gray-500">{company.name}</p>}
         </div>
 
-        {/* Top Row: Score & Timers */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="flex flex-col items-center justify-center p-6 shadow-sm border-t-4 border-t-[#1a237e]">
             <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -127,8 +121,38 @@ export default function DashboardPage() {
           <CountdownTimer targetDate={new Date('2027-05-13')} label="Full Enforcement Deadline" urgencyDays={360} />
         </div>
 
-        {/* Tasks Section (kept unchanged) */}
-        {/* ... you can keep the rest of the original JSX here ... */}
+        {/* Tasks Section */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold">Tasks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {criticalTasks.map(task => (
+              <Card key={task.id} className="border-red-200">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold">{task.task_name}</h3>
+                      <p className="text-sm text-gray-500">Critical</p>
+                    </div>
+                    <Button size="sm" onClick={() => markTaskDone(task.id)}>Mark Done</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {highTasks.map(task => (
+              <Card key={task.id} className="border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold">{task.task_name}</h3>
+                      <p className="text-sm text-gray-500">High Priority</p>
+                    </div>
+                    <Button size="sm" onClick={() => markTaskDone(task.id)}>Mark Done</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </AuthGuard>
   )
